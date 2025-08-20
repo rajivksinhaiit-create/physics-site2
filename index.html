@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Physics Problems</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root { --bg:#f6f8fb; --panel:#ffffff; --ink:#0f172a; --muted:#64748b; --brand:#0ea5e9; }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Inter,system-ui,Arial,sans-serif;background:var(--bg);color:var(--ink)}
+    header{position:sticky;top:0;background:linear-gradient(180deg,#fff,rgba(255,255,255,.9));backdrop-filter:saturate(140%) blur(6px);border-bottom:1px solid #e5e7eb}
+    .wrap{max-width:1000px;margin:0 auto;padding:16px}
+    h1{margin:0;font-size:22px}
+    .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+    button,input,select,textarea{font:inherit}
+    .btn{padding:8px 12px;border:1px solid #cbd5e1;border-radius:10px;background:#fff;cursor:pointer}
+    .btn.brand{background:var(--brand);border-color:var(--brand);color:#fff}
+    .btn.danger{border-color:#fecaca;background:#fff;color:#ef4444}
+    main{max-width:1000px;margin:16px auto;padding:0 16px;display:grid;grid-template-columns:260px 1fr;gap:16px}
+    aside{position:sticky;top:82px}
+    .panel{background:var(--panel);border:1px solid #e5e7eb;border-radius:16px;box-shadow:0 4px 12px rgba(15,23,42,.04)}
+    .panel.pad{padding:14px}
+    .field{margin-bottom:10px}
+    label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
+    input[type="text"], select, textarea{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:10px;background:#fff}
+    .list{display:grid;gap:12px}
+    .card{padding:14px}
+    .badge{display:inline-block;padding:2px 8px;border:1px solid #e5e7eb;border-radius:999px;font-size:12px;color:#334155;background:#f8fafc}
+    .diff{font-weight:600}
+    .diff.Easy{background:#ecfdf5;border-color:#d1fae5;color:#047857}
+    .diff.Medium{background:#fffbeb;border-color:#fde68a;color:#a16207}
+    .diff.Hard{background:#fef2f2;border-color:#fecaca;color:#b91c1c}
+    .prose p{margin:.5rem 0}
+    .hidden{display:none}
+    .modal{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;place-items:center;padding:12px}
+    .modal .sheet{max-width:900px;width:100%}
+    .sheet h3{margin:0 0 8px}
+    .sheet .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    @media (max-width: 820px){main{grid-template-columns:1fr} aside{position:static}}
+    @media print { header, aside, .no-print { display:none !important } main{grid-template-columns:1fr} }
+  </style>
+  <!-- MathJax for LaTeX -->
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <h1>Physics Problems</h1>
+      <div class="actions">
+        <button class="btn brand" id="btnNew">+ New Problem</button>
+        <button class="btn" id="btnExport">Export</button>
+        <label class="btn" style="cursor:pointer">Import <input id="importFile" type="file" accept=".json" style="display:none"></label>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <aside>
+      <div class="panel pad">
+        <div class="field">
+          <label>Search</label>
+          <input type="text" id="search" placeholder="title, tag, source…">
+        </div>
+        <div class="field">
+          <label>Topic</label>
+          <select id="topic"></select>
+        </div>
+        <div class="field">
+          <label>Difficulty</label>
+          <select id="difficulty">
+            <option>All</option>
+            <option>Easy</option>
+            <option>Medium</option>
+            <option>Hard</option>
+          </select>
+        </div>
+      </div>
+    </aside>
+
+    <section>
+      <div id="list" class="list"></div>
+      <div id="empty" class="panel pad" style="text-align:center;color:#64748b;display:none">No problems found.</div>
+    </section>
+  </main>
+
+  <!-- New/Edit Modal -->
+  <div id="modal" class="modal">
+    <div class="sheet panel pad">
+      <h3 id="modalTitle">New Problem</h3>
+      <div class="grid">
+        <div>
+          <div class="field"><label>Title</label><input id="f_title" type="text"></div>
+          <div class="field"><label>Topic</label><input id="f_topic" list="topicsList" type="text"></div>
+          <datalist id="topicsList"></datalist>
+          <div class="field"><label>Difficulty</label>
+            <select id="f_diff"><option>Easy</option><option selected>Medium</option><option>Hard</option></select>
+          </div>
+          <div class="field"><label>Tags (comma separated)</label><input id="f_tags" type="text" placeholder="kinematics, jee"></div>
+          <div class="field"><label>Source (book/exam)</label><input id="f_source" type="text"></div>
+          <div class="field"><label>Media URL (YouTube / MP4 / image)</label><input id="f_media" type="text" placeholder="https://youtu.be/... or .mp4 or .png"></div>
+          <div class="actions"><button class="btn brand" id="save">Save</button><button class="btn" id="cancel">Cancel</button></div>
+        </div>
+        <div>
+          <div class="field"><label>Problem (supports LaTeX $...$ and $$...$$)</label><textarea id="f_stmt" rows="7"></textarea></div>
+          <div class="field"><label>Solution</label><textarea id="f_sol" rows="7"></textarea></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+// ---------- Simple single-file app (no build, no libs) ----------
+const JEE_TOPICS = [
+  "Units and Measurements","Kinematics","Laws of Motion","Work, Energy and Power",
+  "Rotational Motion","Gravitation","Oscillations","Fluid Mechanics",
+  "Waves","Sound Waves","Thermodynamics","Kinetic Theory of Gases",
+  "Electrostatics","Current Electricity","Magnetic Effects of Current",
+  "Electromagnetic Induction","Alternating Current","Electromagnetic Waves",
+  "Ray Optics","Wave Optics",
+  "Dual Nature of Matter and Radiation","Atomic Structure","Nuclear Physics",
+  "Semiconductors and Electronics"
+];
+
+const $ = (q)=>document.querySelector(q);
+const listEl = $('#list');
+const emptyEl = $('#empty');
+const topicSel = $('#topic');
+const diffSel = $('#difficulty');
+const searchEl = $('#search');
+const topicsList = $('#topicsList');
+
+const modal = $('#modal');
+const modalTitle = $('#modalTitle');
+const f = {
+  title: $('#f_title'), topic: $('#f_topic'), diff: $('#f_diff'), tags: $('#f_tags'),
+  source: $('#f_source'), media: $('#f_media'), stmt: $('#f_stmt'), sol: $('#f_sol')
+};
+
+let problems = load() || [
+  ex("Inclined Plane with Friction","Kinematics","Medium",
+     ["newton","friction","jee"],"Starter Set",
+     `A block of mass $m$ is on a rough plane of angle $\\theta$ with coefficient of friction $\\mu$. Find the minimum $\\theta$ for which it starts sliding.`,
+     `Down-component is $mg\\sin\\theta$, max static friction $f_{max}=\\mu mg\\cos\\theta$. Slide when $mg\\sin\\theta>\\mu mg\\cos\\theta \\Rightarrow \\tan\\theta>\\mu$. So $\\theta_{min}=\\arctan\\mu$.`,
+     ""),
+  ex("LC Oscillations Energy Split","Electromagnetic Induction","Easy",
+     ["circuits","oscillations"],"Starter Set",
+     `In an ideal LC circuit show that energy oscillates between capacitor and inductor with $\\omega=1/\\sqrt{LC}$.`,
+     `Using $q''+\\omega^2 q=0$ with $\\omega=1/\\sqrt{LC}$, total energy $=\\tfrac12CV_0^2$ is constant.`,
+     "")
+];
+
+let editingId = null; // when editing existing problem
+
+init();
+render();
+
+function ex(title,topic,diff,tags,source,stmt,sol,mediaUrl){
+  return { id: id(), title, topic, difficulty: diff, tags, source, statement: stmt, solution: sol, mediaUrl, createdAt: new Date().toISOString() };
+}
+
+function id(){ return Math.random().toString(36).slice(2,10) + Date.now().toString(36).slice(-4); }
+
+function init(){
+  // fill filters
+  const tset = new Set(["All", ...JEE_TOPICS, ...problems.map(p=>p.topic)]);
+  topicSel.innerHTML = [...tset].map(t=>`<option>${t}</option>`).join('');
+  topicsList.innerHTML = JEE_TOPICS.map(t=>`<option value="${t}">`).join('');
+
+  // events
+  [topicSel, diffSel, searchEl].forEach(el=>el.addEventListener('input',render));
+  $('#btnExport').addEventListener('click', onExport);
+  $('#importFile').addEventListener('change', onImport);
+  $('#btnNew').addEventListener('click', ()=>openModal());
+  $('#cancel').addEventListener('click', closeModal);
+  $('#save').addEventListener('click', saveModal);
+}
+
+function render(){
+  const q = searchEl.value.trim().toLowerCase();
+  const t = topicSel.value || 'All';
+  const d = diffSel.value || 'All';
+
+  const items = problems.filter(p => (t==='All'||p.topic===t))
+    .filter(p => (d==='All'||p.difficulty===d))
+    .filter(p => !q || `${p.title} ${p.topic} ${p.difficulty} ${p.source} ${(p.tags||[]).join(' ')}`.toLowerCase().includes(q))
+    .sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+
+  listEl.innerHTML = items.map(card).join('');
+  emptyEl.style.display = items.length ? 'none' : 'block';
+  typeset();
+}
+
+function card(p){
+  return `<div class="panel card">
+    <div style="display:flex;gap:10px;align-items:flex-start;justify-content:space-between">
+      <div style="flex:1">
+        <h3 style="margin:0 0 6px 0">${esc(p.title)}</h3>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;font-size:12px;margin-bottom:8px">
+          <span class="badge">${esc(p.topic)}</span>
+          <span class="badge diff ${p.difficulty}">${p.difficulty}</span>
+          ${(p.tags||[]).slice(0,4).map(t=>`<span class="badge">#${esc(t)}</span>`).join('')}
+          ${p.source?`<span class="badge">📚 ${esc(p.source)}</span>`:''}
+          <span class="badge">${new Date(p.createdAt).toLocaleDateString()}</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px">
+        <button class="btn" onclick="editProblem('${p.id}')">Edit</button>
+        <button class="btn danger" onclick="delProblem('${p.id}')">Delete</button>
+      </div>
+    </div>
+    ${p.mediaUrl ? `<div style="margin:8px 0 6px 0">${media(p.mediaUrl)}</div>`:''}
+    <div class="prose" data-math>${p.statement}</div>
+    <div class="actions" style="margin-top:8px">
+      <button class="btn" onclick="toggleSol('${p.id}')">Show/Hide Solution</button>
+    </div>
+    <div id="sol-${p.id}" class="prose hidden" data-math style="margin-top:8px">${p.solution}</div>
+  </div>`;
+}
+
+function media(url){
+  const u = String(url||'');
+  const yt = u.match(/(?:youtu.be\/(.+)|youtube.com\/(?:watch\?v=|embed\/)([^&#?]+))/);
+  const vid = yt ? (yt[1]||yt[2]) : null;
+  if(vid){
+    return `<div style="position:relative;padding-top:56.25%"><iframe style="position:absolute;inset:0;width:100%;height:100%;border:1px solid #e5e7eb;border-radius:10px" src="https://www.youtube.com/embed/${vid}" allowfullscreen title="YouTube"></iframe></div>`
+  }
+  if(/\.mp4($|\?)/i.test(u)) return `<video controls style="width:100%;border-radius:10px;border:1px solid #e5e7eb" src="${esc(u)}"></video>`;
+  if(/\.(png|jpg|jpeg|gif|webp)($|\?)/i.test(u)) return `<img style="width:100%;border-radius:10px;border:1px solid #e5e7eb" src="${esc(u)}" alt="media"/>`;
+  return `<a href="${esc(u)}" target="_blank" rel="noreferrer">Open media</a>`;
+}
+
+function toggleSol(id){
+  const el = document.getElementById('sol-'+id);
+  if(!el) return; el.classList.toggle('hidden'); typeset();
+}
+
+function editProblem(id){
+  const p = problems.find(x=>x.id===id); if(!p) return;
+  editingId = id; openModal(p);
+}
+
+function delProblem(id){
+  if(!confirm('Delete this problem?')) return;
+  problems = problems.filter(p=>p.id!==id); save(); render();
+}
+
+function openModal(p){
+  modal.style.display = 'grid';
+  modalTitle.textContent = p? 'Edit Problem' : 'New Problem';
+  f.title.value = p?.title || '';
+  f.topic.value = p?.topic || (topicSel.value==='All'?'':topicSel.value);
+  f.diff.value = p?.difficulty || 'Medium';
+  f.tags.value = p?.tags?.join(', ') || '';
+  f.source.value = p?.source || '';
+  f.media.value = p?.mediaUrl || '';
+  f.stmt.value = p?.statement || '';
+  f.sol.value = p?.solution || '';
+}
+
+function closeModal(){ modal.style.display='none'; editingId=null; }
+
+function saveModal(){
+  if(!f.title.value.trim()) return alert('Please add a title');
+  if(!f.stmt.value.trim()) return alert('Please add the problem statement');
+  const data = {
+    id: editingId || id(),
+    title: f.title.value.trim(),
+    topic: f.topic.value.trim() || 'General',
+    difficulty: f.diff.value,
+    tags: f.tags.value.split(',').map(s=>s.trim()).filter(Boolean),
+    source: f.source.value.trim(),
+    statement: f.stmt.value,
+    solution: f.sol.value,
+    mediaUrl: f.media.value.trim(),
+    createdAt: new Date().toISOString(),
+  };
+  const i = problems.findIndex(p=>p.id===editingId);
+  if(i>=0) problems[i]=data; else problems.unshift(data);
+  save(); render(); closeModal();
+}
+
+function onExport(){
+  const blob = new Blob([JSON.stringify(problems,null,2)],{type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url; a.download='physics-problems.json'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function onImport(ev){
+  const file = ev.target.files?.[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    try{
+      const arr = JSON.parse(reader.result);
+      if(!Array.isArray(arr)) throw new Error('Invalid file');
+      problems = arr; save(); render();
+    }catch(e){ alert('Import failed: '+e.message); }
+  };
+  reader.readAsText(file);
+}
+
+function load(){ try{ return JSON.parse(localStorage.getItem('phys:problems')||'null') }catch(e){ return null } }
+function save(){ try{ localStorage.setItem('phys:problems', JSON.stringify(problems)) }catch(e){} }
+
+function esc(s){ return String(s).replace(/[&<>"']/g, m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m])) }
+
+function typeset(){ if(window.MathJax && window.MathJax.typesetPromise){ const nodes=[...document.querySelectorAll('[data-math]')]; window.MathJax.typesetPromise(nodes); } }
+</script>
+</body>
+</html>
